@@ -17,41 +17,55 @@ const checkNote = (input: string) => {
 
 const validateInput = (input: string) => input.split(' ').every(checkNote);
 
-const defaultPattern = 'C3 G3 C4 D4 Eb4 G4 C5 D5';
+const defaultPattern = 'C4 G4 C5 D5 Eb5 D5 C5 G5 Eb5 C6 G5 Eb6 D6 C6 Ab5 G5';
 
 export const Arpeggiator = () => {
-    const synth = new Tone.Synth().toDestination();
-    const [noteString, setNoteString] = useState(defaultPattern);
-    const [seq, setSeq] = useState(new Tone.Sequence((time, note) => {
-        synth.triggerAttackRelease(note, '16n');
-    }, defaultPattern.split(' ')));
+   const synth = new Tone.Synth().toDestination();
+   const [notes, setNotes] = useState(defaultPattern);
+   const [pattern, setPattern] = useState(new Tone.Pattern((time, note : any) => {
+       synth.triggerAttackRelease(note, '16n', time);
+   }, notes.split(' '), 'up'));
+   const [displayPattern, setDisplayPattern] = useState(defaultPattern);
 
-    const handlePlay = () => {
-        Tone.Transport.bpm.value = 130;
-        if(validateInput(noteString)) {
-            
-            setSeq(new Tone.Sequence((time, note) => {
-                synth.triggerAttackRelease(note, '16n');
-            }, noteString.split(' ')));
+   const stopMusic = () => {
+       Tone.Transport.stop();
+       Tone.Transport.cancel(0);
+   }
+   // change type or e when you find it
+   const handleNoteChange = (e : React.ChangeEvent<HTMLInputElement>) => {
+        setNotes(e.target.value);
+    }
 
-            seq.start();
-            Tone.Transport.start();
+    const playMusic = () => {
+        pattern.start(0);
+        Tone.Transport.start('+0.1');
+    }
 
+    const submitPattern = () => {
+        if(validateInput(notes)) {
+            setPattern(new Tone.Pattern((time, note: any) => {
+                synth.triggerAttackRelease(note, '16n', time);
+            }, notes.split(' '), 'up'));
+            setDisplayPattern(notes);
         } else {
-            alert('please use a valid note string');
+           alert('invalid note string');
         }
     }
 
-    const handleStop = () => {
-        Tone.Transport.stop();
-    }
-
     return (
-        <div className='arpeggiator'>
-            <p>Input a note string for the arpeggiator.  Note strings should be individual notes (e.g Ab3) separated by spaces:</p>
-            <input type='text' value={noteString} onChange={(e) => setNoteString(e.target.value)}/>
-            <button onClick={handlePlay}>Play</button>
-            <button onClick={handleStop}>Stop</button>
+        <div id='arpeggiator'>
+            <p>Enter a pattern into the text box that you want to play.  The pattern should consist of note names (C4, Eb5, etc.) separated by spaces</p>
+            <p>Click Play to play the currently submitted pattern, Stop to stop playing, and Submit Pattern to submit the pattern in the text box.</p>
+            <span id='arpeggiator-input' style={{display: 'flex', flexDirection: 'row'}}>
+                <input value={notes} onChange={handleNoteChange} style={{width: '50%'}}/>
+                <button onClick={submitPattern}>Submit Pattern</button>
+            </span>
+            <p>Current pattern: <span id='current-pattern' style={{color: 'darkgrey'}}>{displayPattern}</span></p>
+            <div id='play-buttons' style={{display: 'flex', flexDirection: 'row'}}>
+                <button onClick={playMusic}>Play</button>
+                <button onClick={stopMusic}>Stop</button>
+            </div>
+            <p style={{color: 'darkred'}}>After clicking stop you need to resubmit the pattern for it to play again.  I'm currently working on figuring out why that is</p>
         </div>
-    )
+    );
 }

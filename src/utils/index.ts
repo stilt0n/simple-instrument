@@ -1,0 +1,1 @@
+export { makeScale } from './makeScale';
